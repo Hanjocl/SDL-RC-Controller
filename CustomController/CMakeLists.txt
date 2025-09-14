@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(ControllerLib)
+project(CustomController)
 
 # Needs SDL2 to work
 find_package(SDL2 REQUIRED)
@@ -15,7 +15,3 @@ target_link_libraries(${PROJECT_NAME} PUBLIC SDL2::SDL2)
 
 # Include the header directory
 target_include_directories(${PROJECT_NAME} PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/include")
-
-
-
-

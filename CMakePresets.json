@@ -1,0 +1,55 @@
+{
+    "version": 8,
+    "configurePresets": [
+        {
+            "name": "base-config",
+            "displayName": "Base Configuration",
+            "description": "Sets some standard configuration options.",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "CONFIG_NAME": "${presetName}"
+            },
+            "hidden": true
+        },
+
+        {
+            "name": "base-windows-config",
+            "displayName": "Windows Configuration",
+            "description": "Windows Specific Base Configurations.",
+            "inherits": "base-config",
+            "cacheVariables": {
+            },
+            "hidden": true
+        },
+
+        {
+            "name": "windows-config-debug",
+            "displayName": "Windows Debug Configuration",
+            "description": "Windows Specific Debug Configurations",
+            "inherits": "base-windows-config",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            },
+            "hidden": true
+        },
+
+        {
+            "name": "base-linux-config",
+            "displayName": "Linux Configuration",
+            "description": "Linux Specific Base Configuration.",
+            "inherits": "base-config",
+            "hidden": true
+        },
+
+        {
+            "name": "linux-config-debug",
+            "displayName": "Linux Configuration",
+            "description": "Linux Specific Debug Configuration.",
+            "inherits": "base-config",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug"
+            },
+            "hidden": true
+        }
+    ]
+}

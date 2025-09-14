@@ -6,10 +6,8 @@
 #include <iostream>
 #include <SDL.h>
 
-#include "inputControllerModel.h"
-#include "ControllerModel/controllerModel.h"
-
-#include "crsf.h"
+#include "inputController.h"
+#include "../src/QmlControllerApi.h"
 
 int main(int argc, char *argv[]) {    
     // Start QML
@@ -19,13 +17,17 @@ int main(int argc, char *argv[]) {
         std::cout << "SDL_InitSubSystem Error: " << SDL_GetError() << std::endl;
         return false;
     }
-    InputControllerModel inputController;
 
+    Inputs sdlController(16); // Create controller with 16 channels
+    QmlControllerApi inputController(sdlController);
+    inputController.setDebug(true);
+    
     QQmlApplicationEngine engine;
-    const QUrl url(QStringLiteral("qrc:/SDL_Controller/qml/Main.qml"));
-    
-    engine.rootContext()->setContextProperty("InputController", &inputController);
-    
+    const QUrl url(QStringLiteral("qrc:/SDL_RC_Controller/qml/Main.qml"));
+
+    engine.rootContext()->setContextProperty("SdlController", &inputController);
+    inputController.startPolling(50);
+
     QObject::connect(
         &engine,
         &QQmlApplicationEngine::objectCreationFailed,

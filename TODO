@@ -1,0 +1,11 @@
+1. Add method to change input from QML
+2. Add callback on channel changes
+3. Check if all methods needed are exposed
+
+Questions:
+1. How to expose the function from this sub-library through the main library?
+    ->  By using callbacks I can decouple the functionality from this library from the other's.
+        The main library should have the CustomController class reference
+
+
+It should take a reference to CustomController Class instead of making it in the class itself. This way a reference to both can easily be made to the main library class

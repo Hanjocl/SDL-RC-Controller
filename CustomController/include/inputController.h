@@ -31,8 +31,8 @@ public:
     std::vector<ChannelBoundType> channel_bounds;
 
     // Functions for JSON serialization
-    bool saveToJson(const std::string& filename) const;
-    bool loadFromJson(const std::string& filename);
+    // bool saveToJson(const std::string& filename) const;
+    // bool loadFromJson(const std::string& filename);
 
 protected:
     std::vector<int> gamepad_indices;

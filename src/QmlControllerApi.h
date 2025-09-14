@@ -9,45 +9,40 @@
 
 #include <SDL_keycode.h>
 
-#include "CustomController/include/inputController.h"
+#include "inputController.h"
 
-class InputControllerModel : public QObject {
+class QmlControllerApi : public QObject {
     Q_OBJECT
     Q_PROPERTY(QVariantList channelValues READ channelValues NOTIFY channelValuesChanged)
 
 public:
-    explicit InputControllerModel(QObject *parent = nullptr, int amount_channels = 16);
-    ~InputControllerModel();
+    explicit QmlControllerApi(Inputs& controller, QObject *parent = nullptr);
+    ~QmlControllerApi();
 
-    bool init();
-
-    // QTIMER
+    // Polling functions
     Q_INVOKABLE void startPolling(int intervalHz = 50);
     Q_INVOKABLE void setPollingInterval(int intervalHz);
     Q_INVOKABLE void stopPolling();
 
     // CHANNELS
     QVariantList channelValues() const;
-
-    // UI COMMANDS
-    // void GetInput();
-    // void ApplyConfigToChannel(int channel, int value, ChannelModes mode, SDL_Keycode key = nullptr, int JoystickID = nullptr, int JoystickInput);
     
     Q_INVOKABLE void stopScanning() { scanning = false; }
     Q_INVOKABLE void injectKey(int qtKey, const QString& text);
+    void setDebug(bool state) { debug = state; }
 
 signals:
     void channelValuesChanged();
-    void keyEvent(QString key, int qtKeyCode);
 
 private:
     // Library specific
+    Inputs &SdlController;
     void updateInputs();
-    Inputs m_inputs;
     std::vector<ChannelDataType> m_channels;
     
     // Input Detection
     bool scanning = true;
+    bool debug = false;
     
     // QML Timer
     QTimer m_timer;
