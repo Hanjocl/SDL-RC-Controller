@@ -13,6 +13,7 @@ ColumnLayout {
     property real ch_max: 9999
     
     property string input_label: ""
+    property bool checked: false
     signal scanForInputChanged(bool checked)
 
     signal applyConfig()
@@ -34,23 +35,29 @@ ColumnLayout {
         Button {
             id: input
             Layout.minimumWidth: 120
-            text: checked ? "Waiting for input..." : ch_settings.input_label === "" ? "Set input" : ch_settings.input_label
             checkable: true
-            onCheckedChanged: ch_settings.scanForInputChanged(input.checked)
-            Component.onCompleted: {
-                ch_settings.input_label = "No config found"
+            checked: ch_settings.checked
+            text: ch_settings.checked ? "Waiting for input..." : (ch_settings.input_label === "" ? "Set input" : ch_settings.input_label)
+
+            onClicked: {
+                ch_settings.checked = input.checked
+                ch_settings.scanForInputChanged(ch_settings.checked)
             }
         }
 
         ComboBox {
             id: behaviour_selector
             Layout.minimumWidth: 150
-            model: ["Select behaviour", "Toggle", "Toggle (Symmetrical)", "Tap", "Raw Axis"]
-            currentIndex: ch_settings.selected_behaviour
-            onCurrentIndexChanged: ch_settings.selected_behaviour = behaviour_selector.currentIndex
-            Component.onCompleted: {
-                selected_behaviour = behaviour_selector.model.indexOf("Select behaviour")
+            model: ["NONE", "RAW", "TAP", "HOLD", "RELEASE", "INCREMENT", "TOGGLE", "TOGGLE_SYMETRIC"]
+            onCurrentIndexChanged: {
+                ch_settings.selected_behaviour = behaviour_selector.currentIndex
             }
+            
+            // Initialize once
+            Component.onCompleted: {
+                behaviour_selector.currentIndex = ch_settings.selected_behaviour
+            }
+
         }
 
         RowLayout {

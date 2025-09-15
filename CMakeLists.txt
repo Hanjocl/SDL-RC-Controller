@@ -13,6 +13,8 @@ set(LIB_NAME "SDL_RC_Controller_Lib")
 add_library(${LIB_NAME} STATIC
     src/QmlControllerApi.cpp
     src/QmlControllerApi.h
+    src/ChannelConfig.h
+    src/JsonHelper.h
 )
 
 # Include directories
