@@ -3,6 +3,7 @@
 //
 
 #include "behavior.h"
+#include <iostream>
 
 #include <stdexcept>
 

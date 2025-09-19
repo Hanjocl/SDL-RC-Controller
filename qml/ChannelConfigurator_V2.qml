@@ -49,16 +49,17 @@ ColumnLayout {
             id: behaviour_selector
             Layout.minimumWidth: 150
             model: ["NONE", "RAW", "TAP", "HOLD", "RELEASE", "INCREMENT", "TOGGLE", "TOGGLE_SYMETRIC"]
-            onCurrentIndexChanged: {
-                ch_settings.selected_behaviour = behaviour_selector.currentIndex
-            }
-            
-            // Initialize once
-            Component.onCompleted: {
-                behaviour_selector.currentIndex = ch_settings.selected_behaviour
-            }
 
+            // Bind the currentIndex to the property
+            currentIndex: ch_settings.selected_behaviour
+
+            onCurrentIndexChanged: {
+                if (ch_settings.selected_behaviour !== behaviour_selector.currentIndex) {
+                    ch_settings.selected_behaviour = behaviour_selector.currentIndex
+                }
+            }
         }
+
 
         RowLayout {
             Button {
@@ -125,7 +126,7 @@ ColumnLayout {
                 ch_settings.selected_behaviour = 0
                 ch_settings.value_offset = 0
                 ch_settings.input_label = ""
-                input.checked = false
+                // input.checked = false
                 ch_settings.clearConfig()
             }
         }
@@ -149,7 +150,7 @@ ColumnLayout {
             height: 20
             from: ch_settings.ch_min
             to: ch_settings.ch_max
-            value: ch_settings.ch_current_value
+            value: 0
 
             background: Rectangle { 
                 implicitHeight: raw_progressBar.height

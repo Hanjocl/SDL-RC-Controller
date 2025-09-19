@@ -57,6 +57,41 @@ ApplicationWindow {
                     onClicked: SdlController.saveConfig()
                 }
 
+                TextInput {
+                    id: pollingRateInput
+                    property int pollingRate: 100   // default value
+                    text: pollingRate.toString()
+                    Layout.minimumWidth: 50
+                    font.pixelSize: 20
+                    color: Universal.baseHighColor
+                    horizontalAlignment: Text.AlignHCenter
+                    verticalAlignment: Text.AlignVCenter
+                    validator: IntValidator { bottom: 50; top: 250 }
+
+                    onEditingFinished: {
+                        const val = parseInt(text, 10)
+                        if (!isNaN(val)) {
+                            pollingRate = val
+                            text = val.toString()  // Ensure text is valid
+                        } else {
+                            text = pollingRate.toString()  // Revert invalid input
+                        }
+                    }
+                }
+
+
+                Button {
+                    text: "Start Polling"
+                    Layout.preferredWidth: 150
+                    onClicked: SdlController.startPolling()
+                }
+
+                Button {
+                    text: "Stop Polling"
+                    Layout.preferredWidth: 150
+                    onClicked: SdlController.stopPolling()
+                }
+
             }
 
             // Scrollable container for channels
@@ -93,8 +128,8 @@ ApplicationWindow {
                             for (var i = 0; i < channelRepeater.count; i++) {
                                 var child = channelRepeater.itemAt(i)
                                 if (child) {
-                                    child.ch_current_value = SdlController.channelValues[i]
                                     child.input_label = SdlController.getChannelInputLabel(i)
+                                    child.checked = false
                                     child.selected_behaviour = SdlController.getMode(i)
                                     child.value_offset = SdlController.getChannelOffset(i)
                                 }
@@ -116,10 +151,9 @@ ApplicationWindow {
 
                 // Start asynchronous scanning
                 Qt.callLater(function() {
-                    var inputText = SdlController.setInput(ch_id) // blocks here, but after QML updates
+                    var inputText = SdlController.getInput(ch_id) // blocks here, but after QML updates
                     if (inputText && inputText.length > 0) {
                         child.input_label = inputText
-                        // button.checked = false
                     }
                     child.checked = false
                 })

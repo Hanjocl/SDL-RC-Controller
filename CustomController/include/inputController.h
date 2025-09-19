@@ -9,6 +9,7 @@
 #include <vector>
 #include <SDL.h>
 #include <string>
+#include <iostream>
 
 enum class ChannelBoundType {
     clamp, free, modulo, loop //, bounce
@@ -78,9 +79,15 @@ public:
         std::erase_if(button_down_behaviors, [channel_index](const InputBehavior &input_behavior) {return input_behavior.channel_index == channel_index;});
         std::erase_if(button_up_behaviors, [channel_index](const InputBehavior &input_behavior) {return input_behavior.channel_index == channel_index;});
         std::erase_if(axis_behaviors, [channel_index](const InputBehavior &input_behavior) {return input_behavior.channel_index == channel_index;});
+        channels_raw.at(channel_index) = 0; // Reset channel value
     }
 
-    void add(int channel_index, const SDL_KeyCode &key, double value, InputMode mode=InputMode::set, bool on_release=false) {
+    void add(int channel_index, const SDL_Keycode &key, double value, InputMode mode=InputMode::set, bool on_release=false) {
+        if (channel_index < 0 || channel_index >= channels_raw.size()) {
+            std::cerr << "Invalid channel index: " << channel_index << std::endl;
+            return;
+        }
+
         if (key==SDLK_UNKNOWN) {
             cycle_behaviors.emplace_back(channel_index, value, mode);
         } else if (on_release) {
@@ -90,30 +97,30 @@ public:
         }
     }
 
-    void addTap(int channel_index, const SDL_KeyCode &key, double value) {
+    void addTap(int channel_index, const SDL_Keycode &key, double value) {
         key_down_behaviors.emplace_back(channel_index, value, key);
         cycle_behaviors.emplace_back(channel_index, 0);
     }
 
-    void addRelease(int channel_index, const SDL_KeyCode &key, double value) {
+    void addRelease(int channel_index, const SDL_Keycode &key, double value) {
         key_up_behaviors.emplace_back(channel_index, value, key);
         cycle_behaviors.emplace_back(channel_index, 0);
     }
 
-    void addHold(int channel_index, const SDL_KeyCode &key, double value) {
+    void addHold(int channel_index, const SDL_Keycode &key, double value) {
         key_down_behaviors.emplace_back(channel_index, value, key);
         key_up_behaviors.emplace_back(channel_index, 0, key);
     }
 
-    void addIncrement(int channel_index, const SDL_KeyCode &key, double value) {
+    void addIncrement(int channel_index, const SDL_Keycode &key, double value) {
         key_down_behaviors.emplace_back(channel_index, value, key, InputMode::increment);
     }
 
-    void addToggle(int channel_index, const SDL_KeyCode &key, double value) {
+    void addToggle(int channel_index, const SDL_Keycode &key, double value) {
         key_down_behaviors.emplace_back(channel_index, value, key, InputMode::toggle);
     }
 
-    void addToggleSymmetric(int channel_index, const SDL_KeyCode &key, double value) {
+    void addToggleSymmetric(int channel_index, const SDL_Keycode &key, double value) {
         key_down_behaviors.emplace_back(channel_index, value, key, InputMode::toggle_symmetric);
         channels_raw.at(channel_index) = value;
     }

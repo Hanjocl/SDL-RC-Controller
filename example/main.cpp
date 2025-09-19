@@ -21,6 +21,14 @@ int main(int argc, char *argv[]) {
     Inputs sdlController(16); // Create controller with 16 channels
     QmlControllerApi inputController(sdlController);
     inputController.setDebug(true);
+    inputController.setChannelsCallback([](const std::vector<ChannelDataType>& channels) {
+        // Example callback function to print channel values
+        // std::cout << "Channel Callback values: ";
+        // for (const auto& value : channels) {
+        //     std::cout << value << " ";
+        // }
+        // std::cout << std::endl;
+    });
     
     QQmlApplicationEngine engine;
     const QUrl url(QStringLiteral("qrc:/SDL_RC_Controller/qml/Main.qml"));

@@ -4,6 +4,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QFile>
+#include <iostream>
 #include "ChannelConfig.h"
 
 // Convert ChannelConfig -> QJsonObject
@@ -12,11 +13,12 @@ inline QJsonObject channelConfigToJson(const ChannelConfig& cfg) {
     obj["channel"] = cfg.channel;
     obj["type"] = static_cast<int>(cfg.type);
     obj["mode"] = static_cast<int>(cfg.mode);
-    obj["offset"] = cfg.offset;  // <-- added
+    obj["offset"] = cfg.offset;
 
     if (std::holds_alternative<SDL_Keycode>(cfg.input_data)) {
+        SDL_Keycode kc = std::get<SDL_Keycode>(cfg.input_data);
         obj["input_type"] = "keyboard";
-        obj["keycode"] = static_cast<int>(std::get<SDL_Keycode>(cfg.input_data));
+        obj["keycode"] = QString::fromUtf8(SDL_GetKeyName(kc));  // save as string
     } else if (std::holds_alternative<JoystickButton>(cfg.input_data)) {
         const auto& jb = std::get<JoystickButton>(cfg.input_data);
         obj["input_type"] = "joystick_button";
@@ -40,27 +42,54 @@ inline ChannelConfig channelConfigFromJson(const QJsonObject& obj) {
     cfg.channel = obj["channel"].toInt(-1);
     cfg.type = static_cast<InputType>(obj["type"].toInt(static_cast<int>(InputType::None)));
     cfg.mode = static_cast<ChannelModes>(obj["mode"].toInt(static_cast<int>(ChannelModes::NONE)));
-    cfg.offset = obj["offset"].toInt(0);  // <-- added
+    cfg.offset = obj["offset"].toInt(0);
 
     QString inputType = obj["input_type"].toString();
     if (inputType == "keyboard") {
-        cfg.input_data = static_cast<SDL_Keycode>(obj["keycode"].toInt());
+        QString keyName = obj["keycode"].toString();
+        SDL_Keycode kc = SDL_GetKeyFromName(keyName.toUtf8().constData());
+        cfg.input_data = kc;
+
+        // restore raw_event
+        SDL_Event ev{};
+        ev.type = SDL_KEYDOWN;  // choose KEYDOWN as default
+        ev.key.keysym.sym = kc;
+        cfg.raw_event = ev;
+
     } else if (inputType == "joystick_button") {
         JoystickButton jb;
         jb.button = static_cast<Uint8>(obj["button"].toInt());
         jb.joystick_id = static_cast<SDL_JoystickID>(obj["joystick_id"].toInt());
         cfg.input_data = jb;
+
+        // restore raw_event
+        SDL_Event ev{};
+        ev.type = SDL_JOYBUTTONDOWN;
+        ev.jbutton.button = jb.button;
+        ev.jbutton.which = jb.joystick_id;
+        cfg.raw_event = ev;
+
     } else if (inputType == "joystick_axis") {
-        JoystickAxis ja;
+        JoystickAxis ja; 
         ja.axis = static_cast<Uint8>(obj["axis"].toInt());
         ja.joystick_id = static_cast<SDL_JoystickID>(obj["joystick_id"].toInt());
         cfg.input_data = ja;
+
+        // restore raw_event
+        SDL_Event ev{};
+        ev.type = SDL_JOYAXISMOTION;
+        ev.jaxis.axis = ja.axis;
+        ev.jaxis.which = ja.joystick_id;
+        cfg.raw_event = ev;
+
     } else {
         cfg.input_data = std::monostate{};
+        cfg.raw_event = SDL_Event{};  // clear
     }
 
     return cfg;
 }
+
 
 // Save vector<ChannelConfig> to JSON file
 inline bool saveChannelConfigs(const QString& filePath, const std::vector<ChannelConfig>& configs) {

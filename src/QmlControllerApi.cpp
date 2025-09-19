@@ -11,10 +11,16 @@
 #include <QJsonArray>
 #include "JsonHelper.h"
 
+// Lib that handles inputs
+#include "inputcontroller.h"
+
 QmlControllerApi::QmlControllerApi(Inputs& controller, QObject *parent) 
     : QObject(parent), SdlController(controller), m_channels(controller.getChannels().size()), m_channel_config(controller.getChannels().size()) {
     std::cout << "SDL Controller API: Initialized " << std::endl;
     connect(&m_timer, &QTimer::timeout, this, &QmlControllerApi::updateInputs);
+    for (size_t i = 0; i < m_channel_config.size(); ++i) {
+        m_channel_config[i].channel = static_cast<int>(i);
+    }
 }
 
 QmlControllerApi::~QmlControllerApi() {
@@ -28,9 +34,11 @@ void QmlControllerApi::updateInputs() {
         printChannels(m_channels);
     }
     
-
-    const auto channels = SdlController.getChannels();
-
+    
+    if (channels_callback) {
+        channels_callback(m_channels); // call the callback
+    }
+    
     emit channelValuesChanged(); // Notify QML to refresh the ListView
 }
 
@@ -60,18 +68,20 @@ void QmlControllerApi::stopPolling() {
 
 QVariantList QmlControllerApi::channelValues() const {
     QVariantList list;
-    for (const auto& val : SdlController.getChannels()) {
+    for (const auto& val : m_channels) {
         list.append(QVariant::fromValue(val));  // assuming ChannelDataType can be converted to QVariant
     }
     return list;
 }
 
-QString QmlControllerApi::setInput(int channelIndex) {
+QString QmlControllerApi::getInput(int channelIndex) {
     ChannelConfig& channel = m_channel_config[channelIndex];
     scanning = true;
 
     bool wasPolling = m_timer.isActive();
     if (wasPolling) m_timer.stop();
+
+    QString label = "";
 
     SDL_Event event;
     while (scanning) {
@@ -84,7 +94,8 @@ QString QmlControllerApi::setInput(int channelIndex) {
                 channel.input_data = event.key.keysym.sym;
                 channel.mode = ChannelModes::HOLD;
 
-                return inputLabelFromChannel(channel);
+                label =  inputLabelFromChannel(channel);
+                break;
             }
             else if (event.type == SDL_JOYBUTTONDOWN) {
                 scanning = false;
@@ -93,7 +104,8 @@ QString QmlControllerApi::setInput(int channelIndex) {
                 channel.input_data = JoystickButton{ event.jbutton.button, event.jbutton.which };
                 channel.mode = ChannelModes::HOLD;
 
-                return inputLabelFromChannel(channel);
+                label =  inputLabelFromChannel(channel);
+                break;
             }
             else if (event.type == SDL_JOYAXISMOTION && std::abs(event.jaxis.value) > 16000) {
                 scanning = false;
@@ -103,14 +115,15 @@ QString QmlControllerApi::setInput(int channelIndex) {
                 channel.offset = event.jaxis.value;
                 channel.mode = ChannelModes::RAW;
 
-                return inputLabelFromChannel(channel);
+                label = inputLabelFromChannel(channel);
+                break;
             }
         }
         SDL_Delay(10);
     }
 
     if (wasPolling) startPolling(m_intervalHz);
-    return QString();
+    return QString(label);
 }
 
 QString QmlControllerApi::getChannelInputLabel(int index) const {
@@ -163,7 +176,7 @@ QString QmlControllerApi::inputLabelFromChannel(const ChannelConfig &channel) co
 
 bool QmlControllerApi::ApplyChannelSettings(int channelIndex, int mode, int offset) {
     if (channelIndex < 0 || channelIndex >= static_cast<int>(m_channel_config.size())) {
-        qWarning() << "Invalid channel index:" << channelIndex;
+        qWarning() << "SDL Controller API: Invalid channel index:" << channelIndex;
         return false;
     }
 
@@ -172,33 +185,103 @@ bool QmlControllerApi::ApplyChannelSettings(int channelIndex, int mode, int offs
     channel.mode = static_cast<ChannelModes>(mode);
     channel.offset = offset;
 
+    ApplyInputChannel(channelIndex);
     emit channelValuesChanged(); // notify QML
 
-    qDebug() << "Applied mode" << mode << "and offset" << offset << "to channel" << channelIndex;
     return true;
 }
 
 bool QmlControllerApi::ClearChannelConfig(int channelIndex) {
     if (channelIndex < 0 || channelIndex >= static_cast<int>(m_channel_config.size())) {
-        qWarning() << "Invalid channel index:" << channelIndex;
+        qWarning() << "SDL Controller API: Invalid channel index:" << channelIndex;
         return false;
     }
 
     ChannelConfig& channel = m_channel_config[channelIndex];
 
     // Reset all values
-    channel.channel = -1;
     channel.type = InputType::None;
     channel.raw_event = SDL_Event();        // default SDL_Event
     channel.input_data = ChannelConfig::InputVariant{}; // reset std::variant
     channel.offset = 0;
     channel.mode = ChannelModes::NONE;
 
+    ApplyInputChannel(channelIndex);
+
     emit channelValuesChanged(); // notify QML
 
-    qDebug() << "Cleared config for channel" << channelIndex;
+    qDebug() << "SDL Controller API: Cleared config for channel" << channelIndex;
     return true;
 }
+
+bool QmlControllerApi::ApplyInputChannel(int channelIndex) {
+    if (channelIndex < 0 || channelIndex >= static_cast<int>(m_channel_config.size())) {
+        qWarning() << "SDL Controller API: Invalid channel index:" << channelIndex;
+        return false;
+    }
+
+    const ChannelConfig& config = m_channel_config[channelIndex];
+    std::cout << "SDL Controller API: Applying config to channel " << channelIndex << ": "
+              << "Type=" << static_cast<int>(config.type) << ", "
+              << "Mode=" << static_cast<int>(config.mode) << ", "
+              << "Offset=" << config.offset << ", ";
+    // Apply input using Inputs methods
+    switch (config.type) {
+        case InputType::Keyboard: {
+            const SDL_Keycode& key = config.raw_event.key.keysym.sym;
+            std::cout << "Key= " << SDL_GetKeyName(key) << std::endl;
+            switch (config.mode) {
+                case ChannelModes::RAW:           SdlController.add(config.channel, key, config.offset); break;
+                case ChannelModes::TAP:           SdlController.addTap(config.channel, key, config.offset); break;
+                case ChannelModes::HOLD:          SdlController.addHold(config.channel, key, config.offset); break;
+                case ChannelModes::RELEASE:       SdlController.addRelease(config.channel, key, config.offset); break;
+                case ChannelModes::INCREMENT:     SdlController.addIncrement(config.channel, key, config.offset); break;
+                case ChannelModes::TOGGLE:        SdlController.addToggle(config.channel, key, config.offset); break;
+                case ChannelModes::TOGGLE_SYMETRIC:SdlController.addToggleSymmetric(config.channel, key, config.offset); break;
+                default: break;
+            }
+            break;
+        }
+        case InputType::JoystickButton: {
+            auto jb = std::get<JoystickButton>(config.input_data);
+            std::cout << "Button= " << static_cast<int>(jb.button) << " on Joystick " << jb.joystick_id << std::endl;
+            switch (config.mode) {
+                case ChannelModes::TAP:           SdlController.addTap(config.channel, jb.button, jb.joystick_id, config.offset); break;
+                case ChannelModes::HOLD:          SdlController.addHold(config.channel, jb.button, jb.joystick_id, config.offset); break;
+                case ChannelModes::RELEASE:       SdlController.addRelease(config.channel, jb.button, jb.joystick_id, config.offset); break;
+                case ChannelModes::INCREMENT:     SdlController.addIncrement(config.channel, jb.button, jb.joystick_id, config.offset); break;
+                case ChannelModes::TOGGLE:        SdlController.addToggle(config.channel, jb.button, jb.joystick_id, config.offset); break;
+                case ChannelModes::TOGGLE_SYMETRIC:SdlController.addToggleSymmetric(config.channel, jb.button, jb.joystick_id, config.offset); break;
+                default: break;
+            }
+            break;
+        }
+        case InputType::JoystickAxis: {
+            auto ja = std::get<JoystickAxis>(config.input_data);
+            std::cout << "Axis= " << static_cast<int>(ja.axis) << " on Joystick " << ja.joystick_id << std::endl;
+            switch (config.mode) {
+                case ChannelModes::RAW:           SdlController.addAxis(config.channel, ja.axis, ja.joystick_id, config.offset); break;
+                case ChannelModes::TAP:           SdlController.addAxisTap(config.channel, ja.axis, ja.joystick_id, config.offset); break;
+                case ChannelModes::HOLD:          SdlController.addAxisHold(config.channel, ja.axis, ja.joystick_id, config.offset); break;
+                case ChannelModes::RELEASE:       SdlController.addAxisRelease(config.channel, ja.axis, ja.joystick_id, config.offset); break;
+                case ChannelModes::INCREMENT:     SdlController.addAxisIncrement(config.channel, ja.axis, ja.joystick_id, config.offset); break;
+                case ChannelModes::TOGGLE:        SdlController.addAxisToggle(config.channel, ja.axis, ja.joystick_id, config.offset); break;
+                case ChannelModes::TOGGLE_SYMETRIC:SdlController.addAxisToggleSymmetric(config.channel, ja.axis, ja.joystick_id, config.offset); break;
+                default: break;
+            }
+            break;
+        }
+        case InputType::None: // Reset channel to defaults
+            m_channels[channelIndex] = default_channel_value;
+            SdlController.clear(channelIndex);
+        default:
+            break;
+    }
+
+    emit channelValuesChanged(); // notify QML
+    return true;
+}
+
 
 void QmlControllerApi::injectKey(int qtKey, const QString& text) {
     // inject to SDL
@@ -213,7 +296,6 @@ void QmlControllerApi::injectKey(int qtKey, const QString& text) {
     keycode = static_cast<SDL_Keycode>(qtKey);  // fallback
 
     sdlEvent.key.keysym.sym = keycode;
-    qDebug() << "Injecting key:" << text << "with SDL keycode:" << keycode;
     SDL_PushEvent(&sdlEvent);
 }
 
@@ -237,11 +319,19 @@ bool QmlControllerApi::loadConfig(const QString& filePath) {
         success = loadChannelConfigs(filePath, m_channel_config);
     }
 
+    // Re-apply all channel configs
+    for (size_t i = 0; i < m_channel_config.size(); ++i) {
+        if (m_channel_config[i].type == InputType::None) continue;
+        SdlController.clear(static_cast<int>(i));
+        m_channels[i] = default_channel_value;
+        ApplyInputChannel(static_cast<int>(i));
+    }
+    
     if (success) {
         emit configLoaded();
-        emit channelValuesChanged(); // notify QML
+        emit channelValuesChanged();
+        std::cout << "SDL Controller API: Config loaded from " << (filePath.isEmpty() ? "default path" : filePath.toStdString()) << std::endl;
     }
-    std::cout << "SDL Controller API: Config loaded from " << (filePath.isEmpty() ? "default path" : filePath.toStdString()) << std::endl;
     return success;
 }
 
