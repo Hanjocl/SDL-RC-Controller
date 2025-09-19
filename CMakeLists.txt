@@ -19,13 +19,20 @@ add_library(${LIB_NAME} STATIC
 
 # Include directories
 target_include_directories(${LIB_NAME} 
-    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include
+    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
-# depecndencies
+
+# -----------------------------
+# Include SDL Controller libraries
+# -----------------------------
+add_subdirectory(CustomController)
+target_link_libraries(${LIB_NAME} 
+    PUBLIC CustomControllerLib
+)
+
+# QT & SDL2
 find_package(SDL2 REQUIRED)
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets Gui Quick Qml)
-
-# Link dependencies
 target_link_libraries(${LIB_NAME}
     PUBLIC SDL2::SDL2
     PUBLIC Qt6::Core
@@ -43,11 +50,7 @@ qt_add_qml_module(${LIB_NAME}
         qml/Main.qml
         qml/ChannelConfigurator_V2.qml
 )
-# -----------------------------
-# Include CRSF USB Host & SDL Controller libraries
-# -----------------------------
-add_subdirectory(CustomController)
-target_link_libraries(${LIB_NAME} PUBLIC CustomController)
+
 
 # -----------------------------
 # Executable: example app
@@ -55,8 +58,7 @@ target_link_libraries(${LIB_NAME} PUBLIC CustomController)
 qt_add_executable(${PROJECT_NAME}
     example/main.cpp
 )
-
-target_link_libraries(${PROJECT_NAME} PRIVATE ${LIB_NAME})
+target_link_libraries(${PROJECT_NAME} PUBLIC ${LIB_NAME})
 
 # Qt policies
 qt_policy(SET QTP0004 NEW)
