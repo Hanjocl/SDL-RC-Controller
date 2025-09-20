@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
 
     Inputs sdlController(16); // Create controller with 16 channels
     QmlControllerApi inputController(sdlController);
-    inputController.setDebug(true);
+    inputController.setDebug(false);
     inputController.setChannelsCallback([](const std::vector<ChannelDataType>& channels) {
         // Example callback function to print channel values
         // std::cout << "Channel Callback values: ";
