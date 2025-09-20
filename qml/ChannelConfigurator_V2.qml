@@ -34,7 +34,7 @@ ColumnLayout {
 
         Button {
             id: input
-            Layout.minimumWidth: 120
+            Layout.minimumWidth: 140
             checkable: true
             checked: ch_settings.checked
             text: ch_settings.checked ? "Waiting for input..." : (ch_settings.input_label === "" ? "Set input" : ch_settings.input_label)

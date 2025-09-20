@@ -7,12 +7,15 @@
 #include <QTimer>
 #include <QVariant>
 #include <functional>
-
+#include <QCoreApplication>
 #include <SDL_Keycode.h>
 
 #include "inputController.h"
 #include "ChannelConfig.h"
 
+
+#define SDL_CONFIG_FILE_NAME "config_sdlController.json"
+#define SDL_CONFIG_FILE_PATH QString(QCoreApplication::applicationDirPath() + "/" + SDL_CONFIG_FILE_NAME)
 
 class QmlControllerApi : public QObject {
     Q_OBJECT

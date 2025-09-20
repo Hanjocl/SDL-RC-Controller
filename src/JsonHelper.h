@@ -125,17 +125,3 @@ inline bool loadChannelConfigs(const QString& filePath, std::vector<ChannelConfi
     }
     return true;
 }
-
-inline QString defaultConfigPath() {
-    return QCoreApplication::applicationDirPath() + "/config.json";
-}
-
-// Save to default app folder
-inline bool saveChannelConfigsDefault(const std::vector<ChannelConfig>& configs) {
-    return saveChannelConfigs(defaultConfigPath(), configs);
-}
-
-// Load from default app folder
-inline bool loadChannelConfigsDefault(std::vector<ChannelConfig>& configs) {
-    return loadChannelConfigs(defaultConfigPath(), configs);
-}

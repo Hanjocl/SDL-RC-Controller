@@ -11,8 +11,6 @@
 #include <QJsonArray>
 #include "JsonHelper.h"
 
-// Lib that handles inputs
-#include "inputcontroller.h"
 
 QmlControllerApi::QmlControllerApi(Inputs& controller, QObject *parent) 
     : QObject(parent), SdlController(controller), m_channels(controller.getChannels().size()), m_channel_config(controller.getChannels().size()) {
@@ -21,6 +19,8 @@ QmlControllerApi::QmlControllerApi(Inputs& controller, QObject *parent)
     for (size_t i = 0; i < m_channel_config.size(); ++i) {
         m_channel_config[i].channel = static_cast<int>(i);
     }
+
+    loadConfig();
 }
 
 QmlControllerApi::~QmlControllerApi() {
@@ -302,7 +302,7 @@ void QmlControllerApi::injectKey(int qtKey, const QString& text) {
 bool QmlControllerApi::saveConfig(const QString& filePath) {
     if (filePath.isEmpty()) {
         // No path given → save to default app folder
-        return saveChannelConfigsDefault(m_channel_config);
+        return saveChannelConfigs(SDL_CONFIG_FILE_NAME ,m_channel_config);
     } else {
         return saveChannelConfigs(filePath, m_channel_config);
     }
@@ -314,10 +314,15 @@ bool QmlControllerApi::loadConfig(const QString& filePath) {
     bool success;
     if (filePath.isEmpty()) {
         // No path given → load from default app folder
-        success = loadChannelConfigsDefault(m_channel_config);
+        success = loadChannelConfigs(SDL_CONFIG_FILE_NAME, m_channel_config);
     } else {
         success = loadChannelConfigs(filePath, m_channel_config);
     }
+    // Check if load was succesfull
+    if (!success) { 
+        std::cout << "SDL Controller API: Config not found at (" << SDL_CONFIG_FILE_NAME << ")" << std::endl; 
+        return success; 
+    }    
 
     // Re-apply all channel configs
     for (size_t i = 0; i < m_channel_config.size(); ++i) {
