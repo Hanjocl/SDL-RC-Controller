@@ -13,6 +13,7 @@
 #include "inputController.h"
 #include "ChannelConfig.h"
 
+
 class QmlControllerApi : public QObject {
     Q_OBJECT
     Q_PROPERTY(QVariantList channelValues READ channelValues NOTIFY channelValuesChanged)
