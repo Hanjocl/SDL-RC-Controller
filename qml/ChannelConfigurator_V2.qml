@@ -150,7 +150,7 @@ ColumnLayout {
             height: 20
             from: ch_settings.ch_min
             to: ch_settings.ch_max
-            value: 0
+            value: ch_settings.ch_current_value
 
             background: Rectangle { 
                 implicitHeight: raw_progressBar.height
