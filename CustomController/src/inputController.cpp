@@ -7,7 +7,7 @@
 #include <SDL_events.h>
 #include <fstream>
 
-Inputs::Inputs(int n_channels) : channels_raw(n_channels, 0), channel_bounds(n_channels, ChannelBoundType::clamp), channel_biases(n_channels, 1500), channel_limits(n_channels, 500) {
+Inputs::Inputs(int n_channels) : channels_raw(n_channels, 0), channel_bounds(n_channels, ChannelBoundType::clamp), channel_biases(n_channels, 992), channel_limits(n_channels, 992) {
     for (int i = 0; i < SDL_NumJoysticks(); i++) {
         if (SDL_IsGameController(i)) {
             gamepad_indices.push_back(i);

@@ -57,6 +57,10 @@ ColumnLayout {
                 if (ch_settings.selected_behaviour !== behaviour_selector.currentIndex) {
                     ch_settings.selected_behaviour = behaviour_selector.currentIndex
                 }
+
+                if (ch_settings.selected_behaviour === 1) {
+                    ch_settings.value_offset = (ch_settings.ch_max + ch_settings.ch_min) / 2
+                }
             }
         }
 
