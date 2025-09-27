@@ -8,7 +8,8 @@
 #include <QVariant>
 #include <functional>
 #include <QCoreApplication>
-#include <SDL_Keycode.h>
+#include <SDL2/SDL_keycode.h> // Seems to work for Arch Linux, not sure if it also works for Windows
+
 
 #include "inputController.h"
 #include "ChannelConfig.h"
