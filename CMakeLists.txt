@@ -72,7 +72,7 @@ if(WIN32)
     
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         COMMAND ${QT_WINDEPLOYQT_EXECUTABLE} 
-            --qmldir ${CMAKE_SOURCE_DIR}/qml
+            --qmldir ${CMAKE_CURRENT_SOURCE_DIR}/qml
             $<TARGET_FILE:${PROJECT_NAME}>
         COMMENT "Running windeployqt with custom options"
     )
